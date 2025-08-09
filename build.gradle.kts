@@ -1,6 +1,10 @@
+import com.vanniktech.maven.publish.SonatypeHost
+
 plugins {
     kotlin("jvm") version "2.2.0"
+    id("org.jetbrains.dokka") version "2.0.0"
     application
+    id("com.vanniktech.maven.publish") version "0.30.0"
 }
 
 group = "com.github.jakobteuber"
@@ -28,6 +32,41 @@ application { mainClass = "com.github.jakobteuber.eldamo.MainKt" }
 tasks.test {
     useJUnitPlatform()
 }
+
 kotlin {
     jvmToolchain(17)
+}
+
+mavenPublishing {
+    publishToMavenCentral(host = SonatypeHost.CENTRAL_PORTAL)
+
+    signAllPublications()
+
+    coordinates(group.toString(), "eldamoParser", version.toString())
+
+    pom {
+        name = "Eldamo parser"
+        description = "A utility library for working with the Elvish Data Model."
+        inceptionYear = "2025"
+        url = "https://github.com/jakobteuber/EldamoParser"
+        licenses {
+            license {
+                name = "The Apache License, Version 2.0"
+                url = "https://www.apache.org/licenses/LICENSE-2.0.txt"
+                distribution = "https://www.apache.org/licenses/LICENSE-2.0.txt"
+            }
+        }
+        developers {
+            developer {
+                id = "jakob.teuber"
+                name = "Jakob Teuber"
+                url = "https://github.com/jakobteuber/"
+            }
+        }
+        scm {
+            url = "https://github.com/jakobteuber/EldamoParser"
+            connection = "scm:git:git://github.com/jakobteuber/EldamoParser"
+            developerConnection = "scm:git:ssh://git@github.com/jakobteuber/EldamoParser"
+        }
+    }
 }
