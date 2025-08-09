@@ -30,6 +30,7 @@ class Ref : DataNode() {
         @get:XmlAttribute(required = true) var source = ""
         @get:XmlAttribute(required = true, name = "v") var verbum = ""
         @get:XmlElement var note: String? = ""
+        @get:XmlTransient val likedRef get() = index.findRef(source)
     }
 
     class Example : Rel() {

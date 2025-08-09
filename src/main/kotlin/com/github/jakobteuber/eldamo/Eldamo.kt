@@ -73,6 +73,7 @@ class Eldamo(
         fun getParent(ref: String): Word = myRefParent[ref]!!
         fun findWord(pageId: String): Word = myWordById[pageId]!!
         fun findWord(key: Word.Key): Word = myWords[key]!!
+        fun findRef(source: String): Ref = myRefs[source]!!
 
         fun collectRefs(w: Word): List<Ref> = buildList {
             addAll(w.references)

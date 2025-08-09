@@ -4,6 +4,7 @@ package com.github.jakobteuber.eldamo.data
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.xml.bind.annotation.XmlEnumValue
+import jakarta.xml.bind.annotation.adapters.XmlAdapter
 
 private val logger = KotlinLogging.logger {}
 
@@ -76,7 +77,7 @@ enum class Language {
 
 
 
-class MarkAdapter : jakarta.xml.bind.annotation.adapters.XmlAdapter<String, List<Mark>>() {
+class MarkAdapter : XmlAdapter<String, List<Mark>>() {
     val marks = Mark.entries.sortedBy { it.encoding.length }
 
     override fun unmarshal(string: String): List<Mark> = buildList {
@@ -149,9 +150,58 @@ enum class PartOfSpeech {
     @XmlEnumValue("vb") Verb,
 }
 
+sealed interface InflectTableForm
+
+object Unset : InflectTableForm {
+    override fun toString(): String = "InflectTableForm.Unset"
+}
+
+class InflectTableFormAdapter : XmlAdapter<String, InflectTableForm>() {
+    val inflectAdapter = EnumAdapter(
+        Inflection::class,
+        default = Inflection.Unknown,
+        chainable = true)
+    val classAdapter = EnumAdapter(
+        WordClassForm::class,
+        default = WordClassForm.Unknown,
+        chainable = true)
+    val variantAdapter = EnumAdapter(
+        InfectionVariant::class,
+        default = InfectionVariant.Unknown,
+        chainable = true)
+    val classVariantAdapter = EnumAdapter(
+        WordClassVariant::class,
+        default = WordClassVariant.Common,
+        chainable = true)
+
+    override fun unmarshal(v: String?): InflectTableForm? {
+        if (v == null) return null
+        return listOf(
+            inflectAdapter.unmarshal(v),
+            classAdapter.unmarshal(v),
+            variantAdapter.unmarshal(v),
+            classVariantAdapter.unmarshal(v),
+            if (v == "xxx") Unset else null,
+        ).firstOrNull { it != null } ?: run {
+            logger.error { "cannot unmarshal `$v` as either Inflection, Variant or WordClass" }
+            Unset
+        }
+    }
+
+    override fun marshal(v: InflectTableForm?): String? = when (v) {
+        null -> null
+        is Unset -> "xxx"
+        is Inflection -> inflectAdapter.marshal(v)
+        is InfectionVariant -> variantAdapter.marshal(v)
+        is WordClassForm -> classAdapter.marshal(v)
+        is WordClassVariant -> classVariantAdapter.marshal(v)
+    }
+
+}
+
 class InflectionAdapter : EnumAdapter<Inflection>(Inflection::class, Inflection.Unknown)
 
-enum class Inflection {
+enum class Inflection : InflectTableForm {
     @XmlEnumValue("?") Unknown,
     @XmlEnumValue("singular") Singular,
     @XmlEnumValue("dual") Dual,
@@ -166,6 +216,7 @@ enum class Inflection {
     @XmlEnumValue("past") Past,
     @XmlEnumValue("strong-past") StrongPast,
     @XmlEnumValue("perfect") Perfect,
+    @XmlEnumValue("imperfect") Imperfect,
     @XmlEnumValue("strong-perfect") StrongPerfect,
     @XmlEnumValue("future") Future,
     @XmlEnumValue("gerund") Gerund,
@@ -374,7 +425,7 @@ enum class Inflection {
 
 class InfectionVariantAdapter : EnumAdapter<InfectionVariant>(InfectionVariant::class, InfectionVariant.Unknown)
 
-enum class InfectionVariant {
+enum class InfectionVariant : InflectTableForm {
     @XmlEnumValue("unknown") Unknown,
     @XmlEnumValue("b-mutation") BMutation,
     @XmlEnumValue("c-mutation") CMutation,
@@ -456,7 +507,7 @@ enum class InfectionVariant {
 class WordClassAdapter :
     EnumAdapter<WordClassForm>(WordClassForm::class, WordClassForm.Unknown)
 
-enum class WordClassForm {
+enum class WordClassForm : InflectTableForm {
     @XmlEnumValue("?") Unknown,
     @XmlEnumValue("strong-I") StrongI,
     @XmlEnumValue("strong-II") StrongII,
@@ -487,7 +538,7 @@ enum class WordClassForm {
 class WordClassVariantAdapter :
     EnumAdapter<WordClassVariant>(WordClassVariant::class, WordClassVariant.Common)
 
-enum class WordClassVariant {
+enum class WordClassVariant : InflectTableForm {
     @XmlEnumValue("masc") Masculine,
     @XmlEnumValue("fem") Feminine,
     @XmlEnumValue("common") Common,
@@ -507,4 +558,20 @@ enum class SourceType {
     @XmlEnumValue("sindarin") Sindarin,
     @XmlEnumValue("telerin") Telerin,
     @XmlEnumValue("work") Work,
+}
+
+class InflectTableFromAdapter :
+    EnumAdapter<InflectTableFrom>(InflectTableFrom::class, InflectTableFrom.Inflect)
+
+enum class InflectTableFrom {
+    @XmlEnumValue("inflect") Inflect,
+}
+
+class InflectTableKeyAdapter :
+    EnumAdapter<InflectTableKey>(InflectTableKey::class, InflectTableKey.InflectFormAndClassRef)
+
+enum class InflectTableKey {
+    @XmlEnumValue("class") Class,
+    @XmlEnumValue("inflect-form-and-class-ref") InflectFormAndClassRef,
+    @XmlEnumValue("inflect-form-ref") InflectFormRef,
 }

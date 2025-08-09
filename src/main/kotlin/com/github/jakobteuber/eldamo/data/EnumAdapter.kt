@@ -9,7 +9,8 @@ private val logger = KotlinLogging.logger {}
 
 open class EnumAdapter<E : Enum<E>>(
     private val enumType: KClass<E>,
-    private val default: E
+    private val default: E,
+    private val chainable: Boolean = false,
 ) : XmlAdapter<String, E>() {
 
     private fun getXmlName(e: E): String {
@@ -25,11 +26,14 @@ open class EnumAdapter<E : Enum<E>>(
 
     override fun unmarshal(str: String?): E? {
         if (str == null) return null
-        return strToE[str]
-            ?: run {
+        val v = strToE[str]
+        return v
+            ?: if (!chainable) {
                 logger.error { "Unknown enum value `$str` for ${enumType.simpleName} " +
-                    "in ${this@EnumAdapter::class.qualifiedName}" }
+                        "in ${this@EnumAdapter::class.qualifiedName}" }
                 default
+            } else {
+                null
             }
     }
 

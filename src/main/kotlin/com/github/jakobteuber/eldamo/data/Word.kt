@@ -1,7 +1,6 @@
 @file:Suppress("unused")
 package com.github.jakobteuber.eldamo.data
 
-import com.github.jakobteuber.eldamo.Eldamo
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.xml.bind.annotation.XmlAttribute
 import jakarta.xml.bind.annotation.XmlElement
@@ -51,6 +50,8 @@ class Word : DataNode() {
     @get:XmlAttribute(name = "created") var createdBy: String? = null
     @get:XmlAttribute(name = "neo-gloss") var neoGloss: String? = null
     @get:XmlAttribute(name = "vetted") var vettedBy: String? = null
+    @get:XmlAttribute(name = "neo-version") var neoVersion: String? = null
+    val isNeo get() = neoVersion != null
 
     @get:XmlAttribute(name = "from") var phonRuleFrom: String? = null
     @get:XmlAttribute(name = "rule") var phonRuleTo: String? = null
@@ -72,6 +73,7 @@ class Word : DataNode() {
         @get:XmlAttribute(required = true, name = "l") var language = Language.Unknown
         @get:XmlAttribute(required = true, name = "v") var verbum = ""
         val key get() = Key(language, verbum)
+        val likedWord get() =  index.findWord(key)
     }
 
     @XmlType(name = "wordBefore")
@@ -166,4 +168,47 @@ class Word : DataNode() {
 
     @get:XmlElement(required = true, name = "inflect")
     var inflections = mutableListOf<Inflect>()
+
+    class RuleKey {
+        @get:XmlAttribute(name = "l") var language = ""
+        @get:XmlAttribute(name = "rule") var rule = ""
+        @get:XmlAttribute(name = "from") var from = ""
+    }
+
+    @get:XmlElement(required = true, name = "rule")
+    var ruleKeys = mutableListOf<RuleKey>()
+
+    class InflectTable : DataNode() {
+        @get:XmlAttribute(name = "exclude") var exclude: String? = ""
+        @get:XmlAttribute(required = true) @get:XmlJavaTypeAdapter(InflectTableFormAdapter::class)
+        var form = mutableListOf<InflectTableForm>()
+        @get:XmlAttribute @get:XmlJavaTypeAdapter(InflectTableFromAdapter::class)
+        var from: InflectTableFrom? = null
+        @get:XmlAttribute var hide: Boolean? = null
+        @get:XmlAttribute @get:XmlJavaTypeAdapter(InflectTableKeyAdapter::class)
+        var key: InflectTableKey? = null
+        @get:XmlAttribute(name = "l") var language: String? = ""
+        @get:XmlAttribute @get:XmlJavaTypeAdapter(InflectTableFormAdapter::class)
+        var omit = mutableListOf<InflectTableForm>()
+        @get:XmlAttribute(name = "show-element-of") var showElementOf: Boolean? = null
+        @get:XmlAttribute(name = "show-form") var showForm: Boolean? = null
+        @get:XmlAttribute(name = "show-glosses") var showGlosses: Boolean? = null
+        @get:XmlAttribute(name = "show-variants") var showVariants: Boolean? = null
+        @get:XmlAttribute @get:XmlJavaTypeAdapter(PosAdapter::class)
+        var speech: PartOfSpeech? = null
+
+        class Form {
+            @get:XmlAttribute @get:XmlJavaTypeAdapter(InflectTableFormAdapter::class)
+            var exclude = mutableListOf<InflectTableForm>()
+            @get:XmlAttribute @get:XmlJavaTypeAdapter(InflectTableFormAdapter::class)
+            var exclude2 = mutableListOf<InflectTableForm>()
+            val allExcludes get() = listOf(exclude, exclude2).flatten()
+            @get:XmlAttribute @get:XmlJavaTypeAdapter(InflectTableFormAdapter::class)
+            var form = mutableListOf<InflectTableForm>()
+        }
+
+        @get:XmlElement(required = true, name = "form") var forms = mutableListOf<Form>()
+    }
+
+    @get:XmlElement(name = "inflect-table") var inflectTable = mutableListOf<InflectTable>()
 }
