@@ -1,0 +1,34 @@
+unknown
+adverb
+adjective
+affix
+article
+cardinal
+conjunction
+collective name
+collective noun
+name
+feminine name
+fraction
+grammar
+infix
+interjection
+masculine name
+noun
+ordinal
+particle
+phoneme
+phonetics
+phonetic group
+phonetic rule
+phrase
+place name
+prefix
+preposition
+pronoun
+proper name
+radical
+root
+text
+suffix
+verb
