@@ -5,13 +5,21 @@ import com.github.jakobteuber.eldamo.data.Word
 import com.github.jakobteuber.eldamo.data.WordData
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.xml.bind.JAXBContext
-import java.io.File
 import java.io.InputStream
 import java.net.URI
+import java.nio.file.Files
+import java.nio.file.Path
 import kotlin.time.measureTime
 
 private val logger = KotlinLogging.logger {}
 
+/**
+ * Entry point for the library. Load in the data with [Eldamo.fromFile] or [Eldamo.current].
+ * You can access the data with [data] and [index].
+ *
+ * Every time you access this top level object, it can optionally check if the backing
+ * XML file has changed and then reload the data.
+ */
 class Eldamo(
     private val queryLastModified: () -> Long,
     private val reload: () -> InputStream,
@@ -22,7 +30,17 @@ class Eldamo(
     private var lastModified: Long = 0
     private var myData: WordData? = null
     private var myIndex = Index()
+
+    /**
+     * This object provides access to the data as it is laid out in the XML data model.
+     * If you want to look up a word or reference, use [index] instead.
+     */
     val data: WordData get() { maybeUpdate(); return myData!! }
+
+    /**
+     * This object provides several ways to find a word or a reference by some key.
+     * If you want to traverse the data in the way it’s laid out in the XML, use [data].
+     */
     val index: Index get() { maybeUpdate(); return myIndex }
 
     init { init() }
@@ -42,7 +60,10 @@ class Eldamo(
                     "in ${time.inWholeMilliseconds} ms" }
     }
 
-    class Index {
+    /**
+     * Objects of this class can be used to find words or references by various keys.
+     */
+    class Index internal constructor() {
         private val myWords: MutableMap<Word.Key, Word> = HashMap()
         private val myWordById: MutableMap<String, Word> = HashMap()
         private val myRefParent: MutableMap<String, Word> = HashMap()
@@ -66,15 +87,26 @@ class Eldamo(
             })
         }
 
+        /** All words in the data modle, both those at the top level and nested ones
+         * These “words” also include grammar and text pages on Eldamo, so you might
+         * want to filter for [Word.isNormalWord] */
         val words: Collection<Word> get() = myWordById.values
+        /** All references in the data model. */
         val refs: Collection<Ref> get() = myRefs.values
 
-        fun getParent(ref: Ref): Word = getParent(ref.source)
-        fun getParent(ref: String): Word = myRefParent[ref]!!
+        /** Find the parent [Word] of this reference */
+        fun getParent(ref: Ref): Word = myRefParent[ref.source]!!
+        /** Find the word that is identified by the page id. The page id is the string
+         * of numbers found in an Eldamo link `https://eldamo.org/content/words/word-$pageId.html` */
         fun findWord(pageId: String): Word = myWordById[pageId]!!
+        /** Finds a word from its form and language, wrapped up as a [Word.Key] */
         fun findWord(key: Word.Key): Word = myWords[key]!!
+        /** Finds a reference by its [Ref.source] attribute, which is unique. */
         fun findRef(source: String): Ref = myRefs[source]!!
 
+        /** Collect all references that concern a word. Those are both the references
+         * are listed inside the word itself, and the references that are inside
+         * other Words but show a connection to this word (e.g. cognates, derivations, etc.) */
         fun collectRefs(w: Word): List<Ref> = buildList {
             addAll(w.references)
             for (r in w.references) {
@@ -83,29 +115,33 @@ class Eldamo(
         }
     }
 
-
-
     private fun maybeUpdate() {
         if (queryLastModified() > lastModified) {
             init()
         }
     }
 
-
-
     companion object {
+
+        /** Download the most current data from https://eldamo.org/content/data-model/eldamo-data.xml */
+        @JvmStatic
         fun current(): Eldamo = download(URI("https://eldamo.org/content/data-model/eldamo-data.xml"))
 
+        /** Download an XML file from the specified URL. */
+        @JvmStatic
         fun download(uri: URI) = Eldamo(
             queryLastModified = { uri.toURL().openConnection().lastModified },
             reload = { uri.toURL().openConnection().inputStream!! },
         )
 
-        fun local() = fromFile(File("/home/jakobteuber/Projekte/eldamo/src/data/eldamo-data.xml"))
+        @JvmStatic
+        fun local() = fromFile(Path.of("/home/jakobteuber/Projekte/eldamo/src/data/eldamo-data.xml"))
 
-        fun fromFile(file: File) = Eldamo(
-            queryLastModified = { file.lastModified() },
-            reload = { file.inputStream() },
+        /** Load the XML data from a file */
+        @JvmStatic
+        fun fromFile(file: Path) = Eldamo(
+            queryLastModified = { Files.getLastModifiedTime(file).toMillis() },
+            reload = { Files.newInputStream(file) },
         )
     }
 }

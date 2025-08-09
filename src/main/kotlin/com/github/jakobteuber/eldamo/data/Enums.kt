@@ -69,6 +69,14 @@ enum class Language {
     @XmlEnumValue("ln") LateNoldorin,
     @XmlEnumValue("oss") Ossiriandic,
     ;
+
+    private object Abbreviation : Stringify<Language>("language-abrev.txt")
+    val abbreviation get() = Abbreviation.toString(this)
+    override fun toString() = abbreviation
+
+    private object FullName : Stringify<Language>("language-full.txt")
+    val fullName get() = FullName.toString(this)
+
     companion object  {
         private val adapter = LanguageAdapter()
         fun fromXml(str: String) = adapter.unmarshal(str)!!
@@ -109,6 +117,14 @@ enum class Mark(val encoding: String) {
     Uncertain("?"),
     DeletedSection("|"),
     Updated("^"),
+    ;
+
+    private object Abbreviation : Stringify<Mark>("mark-abrev.txt")
+    val abbreviation get() = Abbreviation.toString(this)
+    override fun toString() = abbreviation
+
+    private object FullName : Stringify<Mark>("mark-full.txt")
+    val fullName get() = FullName.toString(this)
 }
 
 class PosAdapter : EnumAdapter<PartOfSpeech>(PartOfSpeech::class, PartOfSpeech.Unknown)
@@ -148,6 +164,14 @@ enum class PartOfSpeech {
     @XmlEnumValue("text") Text,
     @XmlEnumValue("suf") Suffix,
     @XmlEnumValue("vb") Verb,
+    ;
+
+    private object Abbreviation : Stringify<PartOfSpeech>("pos-abrev.txt")
+    val abbreviation get() = Abbreviation.toString(this)
+    override fun toString() = abbreviation
+
+    private object FullName : Stringify<PartOfSpeech>("pos-full.txt")
+    val fullName get() = Abbreviation.toString(this)
 }
 
 sealed interface InflectTableForm
