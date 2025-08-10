@@ -1,4 +1,4 @@
-package com.github.jakobteuber.eldamo.data
+package io.github.jakobteuber.eldamoParser
 
 import jakarta.xml.bind.annotation.XmlAttribute
 import jakarta.xml.bind.annotation.XmlElement

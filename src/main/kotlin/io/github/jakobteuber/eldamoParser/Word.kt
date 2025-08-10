@@ -1,5 +1,6 @@
 @file:Suppress("unused")
-package com.github.jakobteuber.eldamo.data
+
+package io.github.jakobteuber.eldamoParser
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.xml.bind.annotation.XmlAttribute
@@ -153,11 +154,12 @@ class Word : NeedsIndex() {
     @XmlType(name = "wordBefore")
     class Before : Rel() {
         class OrderExample: NeedsIndex() {
-            @XmlAttribute val source: String = ""
-            @XmlAttribute val verbum: String = ""
+            @get:XmlAttribute var source: String = ""
+            @get:XmlAttribute var verbum: String = ""
+            @get:XmlTransient val linkedRef get() = index.findRef(source)
         }
-        @XmlElement(required = true, name = "order-example")
-        val orderExamples: MutableList<OrderExample> = mutableListOf()
+        @get:XmlElement(required = true, name = "order-example")
+        var orderExamples: MutableList<OrderExample> = mutableListOf()
     }
     /** If this page describes a phonetic rule ([partOfSpeech] == [PartOfSpeech.PhoneticRule]),
      * this is a list of other rules that must come before it.  */
@@ -265,6 +267,8 @@ class Word : NeedsIndex() {
     class Inflect : NeedsIndex() {
         @get:XmlAttribute var source: String? = null
         @get:XmlAttribute(name = "v") var verbum: String? = null
+        @get:XmlTransient val linkedRef: Ref?
+            get() = source?.let { index.findRef(it) }
 
         @get:XmlAttribute(required = true)
         @get:XmlJavaTypeAdapter(InflectionAdapter::class)

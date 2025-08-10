@@ -1,15 +1,11 @@
-package com.github.jakobteuber.eldamo
+package io.github.jakobteuber.eldamoParser
 
-import com.github.jakobteuber.eldamo.data.Ref
-import com.github.jakobteuber.eldamo.data.Word
-import com.github.jakobteuber.eldamo.data.WordData
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.xml.bind.JAXBContext
 import java.io.InputStream
 import java.net.URI
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.Arrays
 import kotlin.time.measureTime
 
 private val logger = KotlinLogging.logger {}

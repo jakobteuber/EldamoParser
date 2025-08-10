@@ -1,4 +1,4 @@
-package com.github.jakobteuber.eldamo.data
+package io.github.jakobteuber.eldamoParser
 
 import java.io.BufferedReader
 import java.io.InputStreamReader

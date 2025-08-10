@@ -1,5 +1,6 @@
 @file:Suppress("UNUSED")
-package com.github.jakobteuber.eldamo.data
+
+package io.github.jakobteuber.eldamoParser
 
 import jakarta.xml.bind.annotation.XmlAttribute
 import jakarta.xml.bind.annotation.XmlElement
@@ -21,13 +22,15 @@ class Ref : NeedsIndex() {
     @get:XmlAttribute(name = "mark")
     @get:XmlJavaTypeAdapter(MarkAdapter::class) var mark = mutableListOf<Mark>()
 
-    @get:XmlTransient val parent get() = index.getParent(this)
+    @get:XmlTransient val parent: Word
+        get() = index.getParent(this)
 
     sealed class Rel : NeedsIndex() {
         @get:XmlAttribute(required = true) var source = ""
         @get:XmlAttribute(required = true, name = "v") var verbum = ""
         @get:XmlElement var note: String? = ""
-        @get:XmlTransient val likedRef get() = index.findRef(source)
+        @get:XmlTransient val likedRef: Ref
+            get() = index.findRef(source)
     }
 
     class Example : Rel() {
@@ -84,7 +87,7 @@ class Ref : NeedsIndex() {
             @get:XmlAttribute(required = true, name = "rule") var ruleTo = ""
             @get:XmlAttribute(required = true, name = "from") var ruleFrom = ""
             @get:XmlAttribute(required = true) var stage = ""
-            @get:XmlTransient val rule
+            @get:XmlTransient val rule: Word?
                 get() = index.findRule(Word.RuleKey(language, ruleTo, ruleFrom))
         }
 

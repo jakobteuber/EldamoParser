@@ -1,9 +1,8 @@
-package com.github.jakobteuber.eldamo.data
+package io.github.jakobteuber.eldamoParser
 
 import jakarta.xml.bind.annotation.XmlAttribute
 import jakarta.xml.bind.annotation.XmlElement
 import jakarta.xml.bind.annotation.XmlRootElement
-import com.github.jakobteuber.eldamo.Eldamo
 
 /**
  * The root node of the XML data modle.

@@ -1,4 +1,4 @@
-package com.github.jakobteuber.eldamo.data
+package io.github.jakobteuber.eldamoParser
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.xml.bind.annotation.XmlValue

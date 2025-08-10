@@ -1,15 +1,10 @@
-package com.github.jakobteuber.eldamo
+package io.github.jakobteuber.eldamoParser
 
 import java.util.Locale.getDefault
 
 fun main() {
     val eldamo = Eldamo.local()
-    eldamo.index.allRefs
-        .flatMap { it.derivatives }
-        .flatMap { it.ruleExamples }
-        .map { it.rule }
-        .distinctBy { it?.pageId }
-        .onEach { println(it) }
+
 }
 
 fun generateEnum(name: String, string: String) {

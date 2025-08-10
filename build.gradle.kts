@@ -3,11 +3,11 @@ import com.vanniktech.maven.publish.SonatypeHost
 plugins {
     kotlin("jvm") version "2.2.0"
     id("org.jetbrains.dokka") version "2.0.0"
-    application
     id("com.vanniktech.maven.publish") version "0.30.0"
+    signing
 }
 
-group = "com.github.jakobteuber"
+group = "io.github.jakobteuber"
 version = "0.1.0-SNAPSHOT"
 
 repositories {
@@ -27,21 +27,13 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect:2.2.0")
 }
 
-application { mainClass = "com.github.jakobteuber.eldamo.MainKt" }
+tasks.test { useJUnitPlatform() }
 
-tasks.test {
-    useJUnitPlatform()
-}
-
-kotlin {
-    jvmToolchain(17)
-}
+kotlin { jvmToolchain(21) }
 
 mavenPublishing {
     publishToMavenCentral(host = SonatypeHost.CENTRAL_PORTAL)
-
     signAllPublications()
-
     coordinates(group.toString(), "eldamoParser", version.toString())
 
     pom {
@@ -69,4 +61,10 @@ mavenPublishing {
             developerConnection = "scm:git:ssh://git@github.com/jakobteuber/EldamoParser"
         }
     }
+}
+
+configure<SigningExtension> {
+    isRequired = true
+    useGpgCmd() // Force Gradle to use GPG command-line mode
+    sign(publishing.publications) // Explicitly sign all publications
 }

@@ -1,6 +1,5 @@
-package com.github.jakobteuber.eldamo.data
+package io.github.jakobteuber.eldamoParser
 
-import com.github.jakobteuber.eldamo.Eldamo
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.xml.bind.annotation.XmlTransient
 import java.util.concurrent.ConcurrentHashMap

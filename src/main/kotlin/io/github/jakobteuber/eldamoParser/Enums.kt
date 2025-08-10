@@ -1,10 +1,9 @@
 @file:Suppress("unused")
 
-package com.github.jakobteuber.eldamo.data
+package io.github.jakobteuber.eldamoParser
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.xml.bind.annotation.XmlEnumValue
-import jakarta.xml.bind.annotation.adapters.XmlAdapter
 
 private val logger = KotlinLogging.logger {}
 
@@ -85,7 +84,7 @@ enum class Language {
 
 
 
-class MarkAdapter : XmlAdapter<String, List<Mark>>() {
+class MarkAdapter : jakarta.xml.bind.annotation.adapters.XmlAdapter<String, List<Mark>>() {
     val marks = Mark.entries.sortedBy { it.encoding.length }
 
     override fun unmarshal(string: String): List<Mark> = buildList {
@@ -180,7 +179,7 @@ object Unset : InflectTableForm {
     override fun toString(): String = "InflectTableForm.Unset"
 }
 
-class InflectTableFormAdapter : XmlAdapter<String, InflectTableForm>() {
+class InflectTableFormAdapter : jakarta.xml.bind.annotation.adapters.XmlAdapter<String, InflectTableForm>() {
     val inflectAdapter = EnumAdapter(
         Inflection::class,
         default = Inflection.Unknown,
