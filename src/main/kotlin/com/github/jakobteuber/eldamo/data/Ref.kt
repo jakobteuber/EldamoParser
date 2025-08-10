@@ -1,12 +1,10 @@
+@file:Suppress("UNUSED")
 package com.github.jakobteuber.eldamo.data
 
-import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.xml.bind.annotation.XmlAttribute
 import jakarta.xml.bind.annotation.XmlElement
 import jakarta.xml.bind.annotation.XmlTransient
 import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter
-
-private val logger = KotlinLogging.logger {}
 
 class Ref : NeedsIndex() {
     @get:XmlAttribute(required = true) var source = ""
