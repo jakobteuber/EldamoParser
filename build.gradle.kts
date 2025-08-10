@@ -8,6 +8,7 @@ plugins {
 }
 
 group = "io.github.jakobteuber"
+val artifactId = "eldamoParser"
 version = "0.1.0-SNAPSHOT"
 
 repositories {
@@ -34,7 +35,7 @@ kotlin { jvmToolchain(21) }
 mavenPublishing {
     publishToMavenCentral(host = SonatypeHost.CENTRAL_PORTAL)
     signAllPublications()
-    coordinates(group.toString(), "eldamoParser", version.toString())
+    coordinates(group.toString(), artifactId, version.toString())
 
     pom {
         name = "Eldamo parser"
