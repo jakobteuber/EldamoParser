@@ -1,15 +1,16 @@
-import com.vanniktech.maven.publish.SonatypeHost
+import java.net.URI
 
 plugins {
     kotlin("jvm") version "2.2.0"
     id("org.jetbrains.dokka") version "2.0.0"
+    id("org.jetbrains.dokka-javadoc") version "2.0.0"
     id("com.vanniktech.maven.publish") version "0.30.0"
     signing
 }
 
 group = "io.github.jakobteuber"
 val artifactId = "eldamoParser"
-version = "0.1.0-SNAPSHOT"
+version = "0.0.1"
 
 repositories {
     mavenCentral()
@@ -32,8 +33,25 @@ tasks.test { useJUnitPlatform() }
 
 kotlin { jvmToolchain(21) }
 
+dokka {
+    dokkaSourceSets {
+        named("main") {
+            moduleName.set("Eldamo Parser")
+            sourceRoots.from(file("src/main/kotlin"))
+            includes.from("ModuleDocs.md")
+            sourceLink {
+                localDirectory.set(file("src/main/kotlin"))
+                remoteUrl.set(URI("https://github.com/your-repo"))
+                remoteLineSuffix.set("#L")
+            }
+        }
+    }
+}
+
 mavenPublishing {
-    publishToMavenCentral(host = SonatypeHost.CENTRAL_PORTAL)
+    publishToMavenCentral(
+        automaticRelease = true
+    )
     signAllPublications()
     coordinates(group.toString(), artifactId, version.toString())
 
