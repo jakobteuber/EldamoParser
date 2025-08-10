@@ -1,6 +1,5 @@
 package com.github.jakobteuber.eldamo.data
 
-import com.github.jakobteuber.eldamo.Eldamo
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.xml.bind.annotation.XmlAttribute
 import jakarta.xml.bind.annotation.XmlElement
@@ -9,11 +8,11 @@ import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter
 
 private val logger = KotlinLogging.logger {}
 
-class Ref : DataNode() {
+class Ref : NeedsIndex() {
     @get:XmlAttribute(required = true) var source = ""
-    val publication get() = source.substringBefore('/')
-    val page get() = source.substringAfter('/').substringBefore('.')
-    val location get() = source.substringAfter('.')
+    @get:XmlTransient val publication get() = source.substringBefore('/')
+    @get:XmlTransient val page get() = source.substringAfter('/').substringBefore('.')
+    @get:XmlTransient val location get() = source.substringAfter('.')
 
     @get:XmlAttribute( name = "l")
     @get:XmlJavaTypeAdapter(LanguageAdapter::class) var language: Language? = null
@@ -26,7 +25,7 @@ class Ref : DataNode() {
 
     @get:XmlTransient val parent get() = index.getParent(this)
 
-    sealed class Rel : DataNode() {
+    sealed class Rel : NeedsIndex() {
         @get:XmlAttribute(required = true) var source = ""
         @get:XmlAttribute(required = true, name = "v") var verbum = ""
         @get:XmlElement var note: String? = ""
@@ -67,7 +66,7 @@ class Ref : DataNode() {
         @get:XmlAttribute(name = "i1") var i1: String? = null
         @get:XmlAttribute(name = "i2") var i2: String? = null
         @get:XmlAttribute(name = "i3") var i3: String? = null
-        val intermediate get() = listOfNotNull(i1, i2, i3)
+        val intermediates get() = listOfNotNull(i1, i2, i3)
 
         class OrderStart {
             @get:XmlAttribute(name = "l")
@@ -80,13 +79,15 @@ class Ref : DataNode() {
         @get:XmlElement(name = "rule-start")
         var ruleStart: OrderStart? = null
 
-        class RuleExample {
+        class RuleExample: NeedsIndex() {
             @get:XmlAttribute(required = true, name = "l")
             @get:XmlJavaTypeAdapter(LanguageAdapter::class)
             var language: Language = Language.Unknown
-            @get:XmlAttribute(required = true) var rule = ""
-            @get:XmlAttribute(required = true) var from = ""
+            @get:XmlAttribute(required = true, name = "rule") var ruleTo = ""
+            @get:XmlAttribute(required = true, name = "from") var ruleFrom = ""
             @get:XmlAttribute(required = true) var stage = ""
+            @get:XmlTransient val rule
+                get() = index.findRule(Word.RuleKey(language, ruleTo, ruleFrom))
         }
 
         @get:XmlElement(required = true, name = "rule-example")
@@ -121,7 +122,7 @@ class Ref : DataNode() {
     @get:XmlElement(required = true, name = "inflect")
     var inflections = mutableListOf<Inflected>()
 
-    val relationships get(): List<Rel> =
+    @get:XmlTransient val relationships get(): List<Rel> =
         listOf(examples, changes, corrections, cognates, derivatives,
             generalRelations, elements, inflections)
             .flatten()

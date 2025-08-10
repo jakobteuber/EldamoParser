@@ -4,7 +4,11 @@ import java.util.Locale.getDefault
 
 fun main() {
     val eldamo = Eldamo.local()
-    eldamo.index.words
+    eldamo.index.allRefs
+        .flatMap { it.derivatives }
+        .flatMap { it.ruleExamples }
+        .map { it.rule }
+        .distinctBy { it?.pageId }
         .onEach { println(it) }
 }
 

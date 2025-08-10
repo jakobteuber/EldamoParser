@@ -7,8 +7,8 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
 import kotlin.reflect.KProperty1
+import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.memberProperties
-import kotlin.reflect.jvm.isAccessible
 
 private val logger = KotlinLogging.logger {}
 
@@ -18,25 +18,27 @@ class AssignOnce<T> {
 
     operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
         if (!assigned) {
-            throw IllegalStateException("Property '${property.name}' not yet assigned.")
+            val className = if (thisRef != null) thisRef::class.qualifiedName else ""
+            throw IllegalStateException("Property $className.${property.name} not yet assigned.")
         }
         return field!!
     }
 
     operator fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
         if (assigned) {
-            throw IllegalStateException("Property '${property.name}' can only be assigned once.")
+            val className = if (thisRef != null) thisRef::class.qualifiedName else ""
+            throw IllegalStateException("Property $className.${property.name} can only be assigned once.")
         }
         field = value
         assigned = true
     }
 }
 
-abstract class DataNode {
+abstract class NeedsIndex {
     @get:XmlTransient internal var index by AssignOnce<Eldamo.Index>()
 
     internal fun visitAll(index: Eldamo.Index) {
-        visit(this, index, null)
+        visit(this, index, HashSet())
     }
 }
 
@@ -47,22 +49,26 @@ private val propertyCache: MutableMap<KClass<*>, List<KProperty1<Any, *>>> =
 private fun getCachedProperties(klass: KClass<*>): List<KProperty1<Any, *>> {
     return propertyCache.computeIfAbsent(klass) {
         klass.memberProperties
-            .filter { it.isAccessible }
             .map { it as KProperty1<Any, *> }
+            .filter {
+                it.findAnnotation<XmlTransient>() == null &&
+                        it.getter.findAnnotation<XmlTransient>() == null
+            }
     }
 }
 
-private fun visit(obj: Any?, index: Eldamo.Index, parent: DataNode?) {
-    if (obj !is DataNode) return
+private fun visit(obj: Any?, index: Eldamo.Index, known: HashSet<NeedsIndex>) {
+    if (obj == null || obj !is NeedsIndex) { return }
+    if (obj in known) return
+    known += obj
     obj.index = index
 
     val klass = obj::class
     for (member in getCachedProperties(klass)) {
         try {
-            val value = member.get(obj)
-            when (value) {
-                is Collection<*> -> value.forEach { visit(it, index, obj) }
-                else -> visit(value, index, obj)
+            when (val value = member.get(obj)) {
+                is Collection<*> -> value.forEach { visit(it, index, known) }
+                is NeedsIndex -> visit(value, index, known)
             }
         } catch (e: Exception) {
             logger.error(e) { "Failure to inject index into $obj" }

@@ -9,6 +9,7 @@ import java.io.InputStream
 import java.net.URI
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.Arrays
 import kotlin.time.measureTime
 
 private val logger = KotlinLogging.logger {}
@@ -56,7 +57,7 @@ class Eldamo(
         }
         logger.info {
             "Reloaded Eldamo ${data.version} " +
-                    "(${index.words.size} words, ${index.refs.size} references) " +
+                    "(${index.allWords.size} words, ${index.allRefs.size} references) " +
                     "in ${time.inWholeMilliseconds} ms" }
     }
 
@@ -64,24 +65,26 @@ class Eldamo(
      * Objects of this class can be used to find words or references by various keys.
      */
     class Index internal constructor() {
-        private val myWords: MutableMap<Word.Key, Word> = HashMap()
-        private val myWordById: MutableMap<String, Word> = HashMap()
-        private val myRefParent: MutableMap<String, Word> = HashMap()
-        private val myRefs: MutableMap<String, Ref> = HashMap()
-        private val myRelatedRefs: MutableMap<String, MutableList<Ref>> = HashMap()
+        private val wordsByKey: MutableMap<Word.Key, Word> = HashMap()
+        private val wordsById: MutableMap<String, Word> = HashMap()
+        private val rules: MutableMap<Word.RuleKey, Word> = HashMap()
+        private val refParent: MutableMap<String, Word> = HashMap()
+        private val refsBySource: MutableMap<String, Ref> = HashMap()
+        private val relatedRefs: MutableMap<String, MutableList<Ref>> = HashMap()
 
         internal fun putWord(w: Word) {
-            myWords[w.key] = w
-            myWordById[w.pageId] = w
+            wordsByKey[w.key] = w
+            wordsById[w.pageId] = w
+            w.ruleKeys.forEach { rules[it] = w }
             w.children.forEach(this::putWord)
             w.references.forEach({ r -> putRef(r, w) })
         }
 
         internal fun putRef(ref: Ref, parent: Word) {
-            myRefs[ref.source] = ref
-            myRefParent[ref.source] = parent
+            refsBySource[ref.source] = ref
+            refParent[ref.source] = parent
             ref.relationships.forEach({ rel ->
-                myRelatedRefs
+                relatedRefs
                     .getOrPut(rel.source, ::mutableListOf)
                     .add(ref)
             })
@@ -90,19 +93,25 @@ class Eldamo(
         /** All words in the data modle, both those at the top level and nested ones
          * These “words” also include grammar and text pages on Eldamo, so you might
          * want to filter for [Word.isNormalWord] */
-        val words: Collection<Word> get() = myWordById.values
+        val allWords: Collection<Word> get() = wordsById.values
         /** All references in the data model. */
-        val refs: Collection<Ref> get() = myRefs.values
+        val allRefs: Collection<Ref> get() = refsBySource.values
+
+        private fun fail(vararg key: Any): Nothing =
+            throw NoSuchElementException(
+                "No element for key ${key.contentToString()}"
+            )
 
         /** Find the parent [Word] of this reference */
-        fun getParent(ref: Ref): Word = myRefParent[ref.source]!!
+        fun getParent(ref: Ref): Word = refParent[ref.source] ?: fail(ref)
         /** Find the word that is identified by the page id. The page id is the string
          * of numbers found in an Eldamo link `https://eldamo.org/content/words/word-$pageId.html` */
-        fun findWord(pageId: String): Word = myWordById[pageId]!!
+        fun findWord(pageId: String): Word = wordsById[pageId] ?: fail(pageId)
+        fun findRule(key: Word.RuleKey): Word? = rules[key]
         /** Finds a word from its form and language, wrapped up as a [Word.Key] */
-        fun findWord(key: Word.Key): Word = myWords[key]!!
+        fun findWord(key: Word.Key): Word = wordsByKey[key] ?: fail(key)
         /** Finds a reference by its [Ref.source] attribute, which is unique. */
-        fun findRef(source: String): Ref = myRefs[source]!!
+        fun findRef(source: String): Ref = refsBySource[source] ?: fail(source)
 
         /** Collect all references that concern a word. Those are both the references
          * are listed inside the word itself, and the references that are inside
@@ -110,7 +119,7 @@ class Eldamo(
         fun collectRefs(w: Word): List<Ref> = buildList {
             addAll(w.references)
             for (r in w.references) {
-                addAll(myRelatedRefs[r.source] ?: emptyList())
+                addAll(relatedRefs[r.source] ?: emptyList())
             }
         }
     }

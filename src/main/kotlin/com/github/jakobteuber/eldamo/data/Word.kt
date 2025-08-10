@@ -19,7 +19,7 @@ private val logger = KotlinLogging.logger {}
  * all entries for words, but also grammar and text pages. You can use [isNormalWord]
  * to filter for actual words.
  */
-class Word : DataNode() {
+class Word : NeedsIndex() {
     /** The language the word belongs to */
     @get:XmlAttribute(required = true, name = "l")
     @get:XmlJavaTypeAdapter(LanguageAdapter::class) var language = Language.Unknown
@@ -38,7 +38,7 @@ class Word : DataNode() {
         override fun toString() = "$language $verbum"
     }
     /** A unique key for a word, consisting of its language and its word form */
-    val key: Key get() = Key(language, verbum)
+    @get:XmlTransient val key: Key get() = Key(language, verbum)
 
     override fun toString() = buildString {
         append(language.abbreviation).append(' ')
@@ -100,7 +100,7 @@ class Word : DataNode() {
      * Eldamo when it was includes */
     @get:XmlAttribute(name = "neo-version") var neoVersion: String? = null
     /** Checks if this word is a [neologism](https://eldamo.org/general/motivations-and-methodology.html) */
-    val isNeo get() = neoVersion != null
+    @get:XmlTransient val isNeo get() = neoVersion != null
 
     /** If this page describes a phonetic rule ([partOfSpeech] == [PartOfSpeech.PhoneticRule]),
      * this indicates the sound that this rule is acting upon (e.g. for *þ > s* would indicate *þ*). */
@@ -137,22 +137,22 @@ class Word : DataNode() {
 
     /** A common type for relationships between words */
     @XmlType(name = "wordRel")
-    sealed class Rel : DataNode() {
+    sealed class Rel : NeedsIndex() {
         /** The language of the word linked to */
         @get:XmlAttribute(required = true, name = "l") var language = Language.Unknown
         /** The form of the word linked to */
         @get:XmlAttribute(required = true, name = "v") var verbum = ""
         /** A key to the word linked to */
-        val linkedKey get() = Key(language, verbum)
+        @get:XmlTransient val linkedKey get() = Key(language, verbum)
         /** The word to which this relationship links */
-        val likedWord get() =  index.findWord(linkedKey)
+        @get:XmlTransient val likedWord get() =  index.findWord(linkedKey)
     }
 
     /** If this page describes a phonetic rule ([partOfSpeech] == [PartOfSpeech.PhoneticRule]),
      * this is a list of other rules that must come before it.  */
     @XmlType(name = "wordBefore")
     class Before : Rel() {
-        class OrderExample: DataNode() {
+        class OrderExample: NeedsIndex() {
             @XmlAttribute val source: String = ""
             @XmlAttribute val verbum: String = ""
         }
@@ -187,7 +187,7 @@ class Word : DataNode() {
     var seeNotes: MutableList<See> = mutableListOf()
     /** Eldamo splits links to other words into [see], [seeAlso], [seeFurther], [seeNotes].
      * This provides a view of all of these combined. */
-    val allSee: List<See> get() = listOf(see, seeAlso, seeFurther, seeNotes).flatten()
+    @get:XmlTransient val allSee: List<See> get() = listOf(see, seeAlso, seeFurther, seeNotes).flatten()
 
     /** A common type for relationships between words that include a relaibility marker */
     @XmlType(name = "wordWithMark")
@@ -239,7 +239,7 @@ class Word : DataNode() {
     var elements: MutableList<Element> = mutableListOf()
 
     /** The word class of a given word */
-    class WordClass : DataNode() {
+    class WordClass : NeedsIndex() {
         /** The word class of a given word */
         @get:XmlAttribute(required = true) var form: MutableList<WordClassForm> = mutableListOf()
         /** The word class variant of a given word */
@@ -249,9 +249,10 @@ class Word : DataNode() {
     @get:XmlElement(required = true, name = "class")
     var wordClass: WordClass? = null
 
-    class Deprecated : DataNode() {
-        @get:XmlAttribute(name = "l") var language: Language? = null
-        @get:XmlAttribute(name = "v") var verbum: String? = null
+    data class Deprecated(
+        @get:XmlAttribute(name = "l") var language: Language? = null,
+        @get:XmlAttribute(name = "v") var verbum: String? = null,
+    ) {
         @get:XmlTransient val key
             get() = if (language != null && verbum != null) {
                 Key(language!!, verbum!!)
@@ -261,7 +262,7 @@ class Word : DataNode() {
     @get:XmlElement(required = true, name = "deprecated")
     var deprecated: MutableList<Deprecated> = mutableListOf()
 
-    class Inflect : DataNode() {
+    class Inflect : NeedsIndex() {
         @get:XmlAttribute var source: String? = null
         @get:XmlAttribute(name = "v") var verbum: String? = null
 
@@ -277,16 +278,19 @@ class Word : DataNode() {
     @get:XmlElement(required = true, name = "inflect")
     var inflections: MutableList<Inflect> = mutableListOf()
 
-    class RuleKey {
-        @get:XmlAttribute(name = "l") var language = ""
-        @get:XmlAttribute(name = "rule") var rule = ""
-        @get:XmlAttribute(name = "from") var from = ""
+    data class RuleKey(
+        @get:XmlJavaTypeAdapter(LanguageAdapter::class)
+        @get:XmlAttribute(name = "l") var language: Language,
+        @get:XmlAttribute(name = "rule") var rule: String,
+        @get:XmlAttribute(name = "from") var from: String,
+    ) {
+        constructor() : this(Language.Unknown, "", "")
     }
 
     @get:XmlElement(required = true, name = "rule")
     var ruleKeys: MutableList<RuleKey> = mutableListOf()
 
-    class InflectTable : DataNode() {
+    class InflectTable {
         @get:XmlAttribute(name = "exclude") var exclude: String? = ""
         @get:XmlAttribute(required = true) @get:XmlJavaTypeAdapter(InflectTableFormAdapter::class)
         var form: MutableList<InflectTableForm> = mutableListOf()
@@ -310,7 +314,7 @@ class Word : DataNode() {
             var exclude: MutableList<InflectTableForm> = mutableListOf()
             @get:XmlAttribute @get:XmlJavaTypeAdapter(InflectTableFormAdapter::class)
             var exclude2: MutableList<InflectTableForm> = mutableListOf()
-            val allExcludes: List<InflectTableForm>
+            @get:XmlTransient val allExcludes: List<InflectTableForm>
                 get() = listOf(exclude, exclude2).flatten()
             @get:XmlAttribute @get:XmlJavaTypeAdapter(InflectTableFormAdapter::class)
             var form: MutableList<InflectTableForm> = mutableListOf()
